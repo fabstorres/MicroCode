@@ -10,7 +10,6 @@ MicroCode is a small C# console app that connects to a local Ollama server and r
 ## Run
 
 ```bash
-dotnet restore
 dotnet run
 ```
 
