@@ -6,7 +6,6 @@ MicroCode is a small C# console app that connects to a local Ollama server and r
 
 - .NET 10 SDK
 - [Ollama](https://ollama.com/) running locally on `http://localhost:11434`
-- The model `nexusriot/qwen3.5-opus-distil:9b` pulled locally, or an updated model name in `Program.cs`
 
 ## Run
 
