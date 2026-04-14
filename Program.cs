@@ -3,8 +3,15 @@ using OllamaSharp;
 
 var ollama = new OllamaApiClient(new Uri("http://localhost:11434"));
 
-var models = await ollama.ListLocalModelsAsync();
-var selectedModel = "";
+var models = (await ollama.ListLocalModelsAsync()).ToList();
+
+if (models.Count == 0)
+{
+    Console.WriteLine("No models installed. Please install a model first.");
+    return;
+}
+
+OllamaSharp.Models.Model? selectedModel = null;
 
 do
 {
@@ -38,17 +45,16 @@ do
     }
     Console.Write("Enter a number to select a model: ");
     if (!int.TryParse(Console.ReadLine(), out int number)) continue;
-    var choice = models.ElementAtOrDefault(number);
-    selectedModel = choice?.ModelName ?? "";
+    selectedModel = models.ElementAtOrDefault(number);
     Console.WriteLine(selectedModel);
-} while (string.IsNullOrWhiteSpace(selectedModel));
+} while (selectedModel is null);
 
 Console.Clear();
 //TODO: Make sure model is compatiable with settings
 var chat = new Chat(ollama)
 {
-    Model = selectedModel,
-
+    Model = selectedModel.ModelName!,
+    Think = true,
 };
 while (true)
 {
@@ -62,7 +68,7 @@ while (true)
         break;
     }
     Console.ForegroundColor = ConsoleColor.Cyan;
-    Console.Write($"{ExtractModelBaseName(selectedModel)}: ");
+    Console.Write($"{ExtractModelBaseName(selectedModel.ModelName!)}: ");
     Console.ResetColor();
     var response = chat.SendAsync(input);
     await foreach (var message in response)
