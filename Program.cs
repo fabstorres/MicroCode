@@ -10,19 +10,33 @@ do
 {
     Console.Clear();
 
-    Console.ForegroundColor = ConsoleColor.Yellow;
-    Console.Write("=== ");
-    Console.ForegroundColor = ConsoleColor.Cyan;
-    Console.Write("MicroCode");
-    Console.ForegroundColor = ConsoleColor.Yellow;
-    Console.WriteLine(" ===");
+    var logo = new[]
+    {
+        "@@@@@@@%**%#%@@@@@@@",
+        "@@@@#     +  +:#@@@@",
+        "@@%       +  +   %@@",
+        "@#        +  +    #@",
+        "@:        +  +   :%@",
+        "%         +  ++@=  %",
+        "@:        +-##    :@",
+        "@*      -*#  +    *@",
+        "@@#  +*   +  +   #@@",
+        "@@@@%     +  +.#@@@@",
+        "@@@@@@@%**%*%@@@@@@@",
+    };
+    var title = "MicroCode by Fabs";
 
-    Console.ResetColor();
+    for (int i = 0; i < logo.Length; i++)
+    {
+        var message = i == logo.Length - 1 ? "  " + title : "";
+        Console.WriteLine(logo[i] + message);
+    }
+    Console.WriteLine();
     foreach (var (model, i) in models.Select((value, index) => (value, index)))
     {
         Console.WriteLine($"{i}: {model.ModelName}");
     }
-    Console.Write("Enter to select a model: ");
+    Console.Write("Enter a number to select a model: ");
     if (!int.TryParse(Console.ReadLine(), out int number)) continue;
     var choice = models.ElementAtOrDefault(number);
     selectedModel = choice?.ModelName ?? "";
