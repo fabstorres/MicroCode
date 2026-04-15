@@ -20,9 +20,10 @@ Type your prompt at the `You:` prompt. Type `exit` or `quit` to close the app.
 
 The following images show example outputs from the application:
 
-![Working Example](assets/working_example.png)
-
-![Model Selection](assets/model_select.png)
+<p align="center">
+  <img src="assets/model_select.png" alt="Model Selection" width="48%" />
+  <img src="assets/working_example.png" alt="Working Example" width="48%" />
+</p>
 
 ## Notes
 
