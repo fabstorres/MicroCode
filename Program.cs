@@ -70,7 +70,7 @@ while (true)
     Console.ForegroundColor = ConsoleColor.Cyan;
     Console.Write($"{ExtractModelBaseName(selectedModel.ModelName!)}: ");
     Console.ResetColor();
-    var response = chat.SendAsync(input);
+    var response = chat.SendAsync(input, [new UnsafeBashTool()]);
     await foreach (var message in response)
     {
         Console.Write(message);
