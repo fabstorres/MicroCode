@@ -16,6 +16,14 @@ dotnet run
 
 Type your prompt at the `You:` prompt. Type `exit` or `quit` to close the app.
 
+## Example Outputs
+
+The following images show example outputs from the application:
+
+![Working Example](assets/working_example.png)
+
+![Model Selection](assets/model_select.png)
+
 ## Notes
 
 - Currently includes an unsafe bash tool (an unrestricted bash tool with user permissions. Use at your risk).

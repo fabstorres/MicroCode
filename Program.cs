@@ -1,6 +1,8 @@
 ﻿using MicroCode.Tools;
 using OllamaSharp;
 
+Console.Title = "MicroCode";
+
 var ollama = new OllamaApiClient(new Uri("http://localhost:11434"));
 
 var models = (await ollama.ListLocalModelsAsync()).ToList();
