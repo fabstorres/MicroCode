@@ -53,7 +53,9 @@ do
 
 Console.Clear();
 
-var chat = new Chat(ollama)
+var systemPrompt = await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, "Prompts", "system.txt"));
+
+var chat = new Chat(ollama, systemPrompt)
 {
     Model = selectedModel.ModelName!,
     Think = true,
