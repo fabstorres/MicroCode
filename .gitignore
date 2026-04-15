@@ -38,3 +38,6 @@ secrets.json
 ## OS files
 .DS_Store
 Thumbs.db
+
+## Dev user settings
+settings.json

@@ -1,9 +1,12 @@
 ﻿using MicroCode.Tools;
+using MicroCode.Utils;
 using OllamaSharp;
 
 Console.Title = "MicroCode";
 
-var ollama = new OllamaApiClient(new Uri("http://localhost:11434"));
+var appSettings = AppSettings.Load(args.Contains("--dev"));
+
+var ollama = new OllamaApiClient(new Uri(appSettings.Ollama.Host));
 
 var models = (await ollama.ListLocalModelsAsync()).ToList();
 
@@ -15,8 +18,11 @@ if (models.Count == 0)
 
 OllamaSharp.Models.Model? selectedModel = null;
 
+var favModel = models.FirstOrDefault(m => appSettings.Ollama.FavoriteModel.Contains(m.ModelName!));
+
 do
 {
+
     Console.Clear();
 
     var logo = new[]
@@ -34,6 +40,12 @@ do
         "@@@@@@@%**%*%@@@@@@@",
     };
     var title = "MicroCode by Fabs";
+
+    if (!(favModel is null))
+    {
+        selectedModel = favModel;
+        break;
+    }
 
     for (int i = 0; i < logo.Length; i++)
     {
