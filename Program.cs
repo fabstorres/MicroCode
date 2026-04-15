@@ -50,12 +50,34 @@ do
 } while (selectedModel is null);
 
 Console.Clear();
-//TODO: Make sure model is compatiable with settings
+
 var chat = new Chat(ollama)
 {
     Model = selectedModel.ModelName!,
     Think = true,
 };
+
+chat.OnThink += (_, thoughts) =>
+{
+    Console.ForegroundColor = ConsoleColor.Gray;
+    Console.Write(thoughts);
+    Console.ResetColor();
+};
+
+chat.OnToolCall += (_, call) =>
+{
+    Console.ForegroundColor = ConsoleColor.DarkMagenta;
+    Console.WriteLine($"\n[tool call] {call.Function?.Name}({string.Join(", ", call.Function?.Arguments?.Select(a => $"{a.Key}: {a.Value}") ?? [])})");
+    Console.ResetColor();
+};
+
+chat.OnToolResult += (_, result) =>
+{
+    Console.ForegroundColor = ConsoleColor.DarkGreen;
+    Console.WriteLine($"[{result.Tool.ToString()}] {result.Result}");
+    Console.ResetColor();
+};
+
 while (true)
 {
     Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -69,13 +91,15 @@ while (true)
     }
     Console.ForegroundColor = ConsoleColor.Cyan;
     Console.Write($"{ExtractModelBaseName(selectedModel.ModelName!)}: ");
-    Console.ResetColor();
+
+    Console.ForegroundColor = ConsoleColor.White;
     var response = chat.SendAsync(input, [new UnsafeBashTool()]);
     await foreach (var message in response)
     {
         Console.Write(message);
     }
     Console.WriteLine();
+    Console.ResetColor();
 }
 
 string ExtractModelBaseName(string input)
