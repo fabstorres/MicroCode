@@ -5,7 +5,7 @@ MicroCode is a small C# console app that connects to a local Ollama server and r
 ## Requirements
 
 - .NET 10 SDK
-- [Ollama](https://ollama.com/) isntance running, defaulted to `http://localhost:11434`
+- [Ollama](https://ollama.com/) instance running, defaulted to `http://localhost:11434`
 - Model with thinking and tool calling.
 
 ## Run
@@ -27,6 +27,7 @@ Type your prompt at the `You:` prompt. Use slash commands (see below) to control
 | `/clear`        | Clear the console                                |
 | `/exit`         | Exit the REPL                                    |
 | `/quit`         | Exit the REPL                                    |
+| `/skills`       | Show all skills loaded during runtime            |
 
 ## Example Outputs
 
