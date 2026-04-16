@@ -5,7 +5,7 @@ MicroCode is a small C# console app that connects to a local Ollama server and r
 ## Requirements
 
 - .NET 10 SDK
-- [Ollama](https://ollama.com/) running locally on `http://localhost:11434`
+- [Ollama](https://ollama.com/) isntance running, defaulted to `http://localhost:11434`
 - Model with thinking and tool calling.
 
 ## Run
@@ -14,7 +14,19 @@ MicroCode is a small C# console app that connects to a local Ollama server and r
 dotnet run
 ```
 
-Type your prompt at the `You:` prompt. Type `exit` or `quit` to close the app.
+Type your prompt at the `You:` prompt. Use slash commands (see below) to control the session.
+
+## Commands
+
+| Command         | Description                                      |
+| --------------- | ------------------------------------------------ |
+| `/help`         | Show all available commands                      |
+| `/model`        | Display current model and list available models  |
+| `/model <name>` | Switch to a different model (partial name match) |
+| `/think`        | Toggle thinking mode on/off                      |
+| `/clear`        | Clear the console                                |
+| `/exit`         | Exit the REPL                                    |
+| `/quit`         | Exit the REPL                                    |
 
 ## Example Outputs
 
@@ -29,8 +41,7 @@ The following images show example outputs from the application:
 
 - Currently includes an unsafe bash tool (an unrestricted bash tool with user permissions. Use at your risk).
 - The app uses `OllamaSharp` to talk to a local Ollama instance.
-- A sample weather tool is included under `Tools/`.
-- If you want to use a different Ollama host or model, update `Program.cs`.
+- Settings are stored in `~/.config/MicroCode/settings.json` (or `settings.json` in the project directory with `--dev` flag).
 
 ## License
 
