@@ -1,3 +1,4 @@
+using MicroCode.Skills;
 using MicroCode.Utils;
 using OllamaSharp;
 
@@ -12,6 +13,7 @@ public class Repl
     private readonly OllamaApiClient _ollama;
     private readonly CommandRegistry _commands;
     private ChatSession? _session;
+    private SkillRegistry? _skills;
     private IList<OllamaSharp.Models.Model> _models = [];
 
     /// <summary>
@@ -48,7 +50,14 @@ public class Repl
         var systemPrompt = await File.ReadAllTextAsync(
             Path.Combine(AppContext.BaseDirectory, "Prompts", "system.txt"));
 
-        _session = new ChatSession(_ollama, selectedModel.ModelName!, systemPrompt);
+        _skills = SkillRegistry.Load(Environment.CurrentDirectory);
+        var skillsSection = _skills.BuildSystemPromptSection();
+        if (!string.IsNullOrEmpty(skillsSection))
+        {
+            systemPrompt = systemPrompt.TrimEnd() + "\n\n" + skillsSection;
+        }
+
+        _session = new ChatSession(_ollama, selectedModel.ModelName!, systemPrompt, _skills);
 
         RegisterCommands();
 
@@ -137,6 +146,36 @@ public class Repl
 
             _session.SetModel(targetModel.ModelName!);
             ConsoleDisplay.PrintInfo($"Switched to model: {targetModel.ModelName}");
+            return true;
+        });
+
+        _commands.Register("skills", "List loaded skills (global + local)", _ =>
+        {
+            if (_skills is null || _skills.Skills.Count == 0)
+            {
+                ConsoleDisplay.PrintInfo("No skills loaded.");
+                return true;
+            }
+
+            ConsoleDisplay.PrintInfo($"Loaded {_skills.Skills.Count} skill(s):");
+            foreach (var skill in _skills.Skills)
+            {
+                Console.Write("  - ");
+                Console.Write(skill.Name);
+                Console.Write(' ');
+                var tagColor = skill.Source == SkillSource.Local
+                    ? ConsoleColor.Green
+                    : ConsoleColor.Blue;
+                var tag = skill.Source == SkillSource.Local ? "[local]" : "[global]";
+                Console.ForegroundColor = tagColor;
+                Console.Write(tag);
+                Console.ResetColor();
+                Console.WriteLine();
+                if (!string.IsNullOrWhiteSpace(skill.Description))
+                {
+                    Console.WriteLine($"      {skill.Description}");
+                }
+            }
             return true;
         });
     }

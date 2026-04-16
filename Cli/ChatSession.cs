@@ -1,3 +1,5 @@
+using System.Text;
+using MicroCode.Skills;
 using MicroCode.Tools;
 using OllamaSharp;
 using OllamaSharp.Models.Chat;
@@ -10,6 +12,7 @@ namespace MicroCode.Cli;
 public class ChatSession
 {
     private readonly Chat _chat;
+    private readonly SkillRegistry _skills;
     private bool _thinkEnabled = true;
 
     /// <summary>
@@ -23,15 +26,17 @@ public class ChatSession
     public bool ThinkEnabled => _thinkEnabled;
 
     /// <summary>
-    /// Creates a new chat session with the specified client, model, and system prompt.
+    /// Creates a new chat session with the specified client, model, system prompt,
+    /// and skill registry used for per-message skill hint injection.
     /// </summary>
-    public ChatSession(OllamaApiClient client, string modelName, string systemPrompt)
+    public ChatSession(OllamaApiClient client, string modelName, string systemPrompt, SkillRegistry skills)
     {
         _chat = new Chat(client, systemPrompt)
         {
             Model = modelName,
             Think = (ThinkValue)true,
         };
+        _skills = skills;
 
         WireEvents();
     }
@@ -50,13 +55,36 @@ public class ChatSession
     {
         ConsoleDisplay.PrintModelPrompt(ModelName);
 
-        var response = _chat.SendAsync(input, [new UnsafeBashTool()]);
+        var augmented = AugmentWithSkillHints(input);
+
+        var response = _chat.SendAsync(augmented, [new UnsafeBashTool()]);
         await foreach (var message in response)
         {
             Console.Write(message);
         }
         Console.WriteLine();
         Console.ResetColor();
+    }
+
+    private string AugmentWithSkillHints(string input)
+    {
+        var matches = _skills.Match(input);
+        if (matches.Count == 0)
+        {
+            return input;
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("<skill_hints>");
+        sb.AppendLine("The user's message mentions the following skill(s). Read the SKILL.md before responding if relevant:");
+        foreach (var skill in matches)
+        {
+            sb.Append("- ").Append(skill.Name).Append(": ").AppendLine(skill.FilePath);
+        }
+        sb.AppendLine("</skill_hints>");
+        sb.AppendLine();
+        sb.Append(input);
+        return sb.ToString();
     }
 
     /// <summary>
