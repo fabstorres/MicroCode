@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            asset: win
+          - rid: linux-x64
+            asset: linux
+          - rid: osx-arm64
+            asset: mac
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+          dotnet-quality: preview
+
+      - run: dotnet publish MicroCode.csproj -c Release -r ${{ matrix.rid }} --self-contained true -o out/${{ matrix.asset }}
+
+      - name: Archive publish output
+        run: |
+          cd out
+          zip -r "MicroCode-${GITHUB_REF_NAME}-${{ matrix.rid }}.zip" "${{ matrix.asset }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MicroCode-${{ matrix.rid }}
+          path: out/MicroCode-*.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/MicroCode-*.zip
+          generate_release_notes: true
