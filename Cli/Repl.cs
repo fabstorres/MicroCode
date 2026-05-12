@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MicroCode.Skills;
 using MicroCode.Utils;
 using OllamaSharp;
@@ -7,31 +8,20 @@ namespace MicroCode.Cli;
 /// <summary>
 /// The core REPL loop orchestrator.
 /// </summary>
-public class Repl
+public class Repl(AppSettings _settings, OllamaApiClient _ollama)
 {
-    private readonly AppSettings _settings;
-    private readonly OllamaApiClient _ollama;
-    private readonly CommandRegistry _commands;
+
+    private readonly CommandRegistry _commands = new();
     private ChatSession? _session;
     private SkillRegistry? _skills;
-    private IList<OllamaSharp.Models.Model> _models = [];
-
-    /// <summary>
-    /// Creates a new REPL instance.
-    /// </summary>
-    public Repl(AppSettings settings, OllamaApiClient ollama)
-    {
-        _settings = settings;
-        _ollama = ollama;
-        _commands = new CommandRegistry();
-    }
+    private List<OllamaSharp.Models.Model> _models = [];
 
     /// <summary>
     /// Runs the main REPL loop.
     /// </summary>
     public async Task RunAsync()
     {
-        _models = (await _ollama.ListLocalModelsAsync()).ToList();
+        _models = [.. await _ollama.ListLocalModelsAsync()];
 
         if (_models.Count == 0)
         {
@@ -56,8 +46,8 @@ public class Repl
         {
             systemPrompt = systemPrompt.TrimEnd() + "\n\n" + skillsSection;
         }
-
-        _session = new ChatSession(_ollama, selectedModel.ModelName!, systemPrompt, _skills);
+        var modelInfo = await _ollama.ShowModelAsync(selectedModel.ModelName!) ?? throw new NotImplementedException();
+        _session = new ChatSession(_ollama, modelInfo, selectedModel, systemPrompt, _skills);
 
         RegisterCommands();
 
@@ -119,7 +109,7 @@ public class Repl
             return true;
         });
 
-        _commands.Register("model", "Show current model or switch (/model <name>)", args =>
+        _commands.Register("model", "Show current model or switch (/model <name>)", async args =>
         {
             if (_session is null) return true;
 
@@ -144,7 +134,14 @@ public class Repl
                 return true;
             }
 
-            _session.SetModel(targetModel.ModelName!);
+            var targetModelInfo = await _ollama.ShowModelAsync(targetModel.ModelName!);
+            if (targetModelInfo is null)
+            {
+                ConsoleDisplay.PrintError($"Could not retrieve info for model: {targetModel.ModelName}");
+                return true;
+            }
+
+            _session.SetModel(targetModel.ModelName!, targetModelInfo);
             ConsoleDisplay.PrintInfo($"Switched to model: {targetModel.ModelName}");
             return true;
         });

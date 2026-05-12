@@ -14,6 +14,7 @@ public class ChatSession
     private readonly Chat _chat;
     private readonly SkillRegistry _skills;
     private bool _thinkEnabled = true;
+    private bool _supportsTools;
 
     /// <summary>
     /// Gets the current model name.
@@ -29,15 +30,16 @@ public class ChatSession
     /// Creates a new chat session with the specified client, model, system prompt,
     /// and skill registry used for per-message skill hint injection.
     /// </summary>
-    public ChatSession(OllamaApiClient client, string modelName, string systemPrompt, SkillRegistry skills)
+    public ChatSession(OllamaApiClient client, OllamaSharp.Models.ShowModelResponse modelInfo, OllamaSharp.Models.Model model, string systemPrompt, SkillRegistry skills)
     {
         _chat = new Chat(client, systemPrompt)
         {
-            Model = modelName,
-            Think = (ThinkValue)true,
+            Model = model.ModelName!,
+            Think = modelInfo.Capabilities?.Any(c => c.Contains("thinking")) == true ? ThinkValue.Medium : null,
         };
         _skills = skills;
-
+        _thinkEnabled = _chat.Think != null;
+        _supportsTools = modelInfo.Capabilities?.Any(c => c.Contains("tools")) == true;
         WireEvents();
     }
 
@@ -57,7 +59,8 @@ public class ChatSession
 
         var augmented = AugmentWithSkillHints(input);
 
-        var response = _chat.SendAsync(augmented, [new UnsafeBashTool()]);
+        var tools = _supportsTools ? new[] { new UnsafeBashTool() } : Array.Empty<UnsafeBashTool>();
+        var response = _chat.SendAsync(augmented, tools);
         await foreach (var message in response)
         {
             Console.Write(message);
@@ -94,15 +97,18 @@ public class ChatSession
     public bool ToggleThink()
     {
         _thinkEnabled = !_thinkEnabled;
-        _chat.Think = (ThinkValue)_thinkEnabled;
+        _chat.Think = _thinkEnabled ? ThinkValue.Medium : null;
         return _thinkEnabled;
     }
 
     /// <summary>
-    /// Switches to a different model.
+    /// Switches to a different model and updates thinking support accordingly.
     /// </summary>
-    public void SetModel(string modelName)
+    public void SetModel(string modelName, OllamaSharp.Models.ShowModelResponse modelInfo)
     {
         _chat.Model = modelName;
+        var supportsThinking = modelInfo.Capabilities?.Any(c => c.Contains("thinking")) == true;
+        _chat.Think = supportsThinking && _thinkEnabled ? ThinkValue.Medium : null;
+        _supportsTools = modelInfo.Capabilities?.Any(c => c.Contains("tools")) == true;
     }
 }
