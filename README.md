@@ -6,7 +6,7 @@ MicroCode is a small C# console app that connects to a local Ollama server and r
 
 - .NET 10 SDK
 - [Ollama](https://ollama.com/) instance running, defaulted to `http://localhost:11434`
-- Model with thinking and tool calling.
+- Model with thinking and tool calling for full capability.
 
 ## Run
 
