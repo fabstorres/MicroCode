@@ -12,7 +12,9 @@ public class Repl(AppSettings _settings, OllamaApiClient _ollama)
 {
 
     private readonly CommandRegistry _commands = new();
-    private ChatSession? _session;
+#pragma warning disable CA1859
+    private MicroCodeSession? _session;
+#pragma warning restore CA1859
     private SkillRegistry? _skills;
     private List<OllamaSharp.Models.Model> _models = [];
 
@@ -47,7 +49,7 @@ public class Repl(AppSettings _settings, OllamaApiClient _ollama)
             systemPrompt = systemPrompt.TrimEnd() + "\n\n" + skillsSection;
         }
         var modelInfo = await _ollama.ShowModelAsync(selectedModel.ModelName!) ?? throw new NotImplementedException();
-        _session = new ChatSession(_ollama, modelInfo, selectedModel, systemPrompt, _skills);
+        _session = new MicroCodeSession(_ollama, selectedModel, modelInfo, systemPrompt, _skills);
 
         RegisterCommands();
 
@@ -104,8 +106,40 @@ public class Repl(AppSettings _settings, OllamaApiClient _ollama)
         _commands.Register("think", "Toggle thinking mode on/off", _ =>
         {
             if (_session is null) return true;
-            var enabled = _session.ToggleThink();
+            var enabled = _session.SetReasoningLevel(_session.ReasoningLevel == "none" ? "medium" : "none");
             ConsoleDisplay.PrintInfo($"Thinking mode: {(enabled ? "ON" : "OFF")}");
+            return true;
+        });
+
+        _commands.Register("reasoning", "Set reasoning level (/reasoning <none|low|medium|high|xhigh>)", args =>
+        {
+            if (_session is null) return true;
+
+            var validLevels = new[] { "none", "low", "medium", "high", "xhigh" };
+
+            if (args.Length == 0)
+            {
+                ConsoleDisplay.PrintInfo($"Current reasoning level: {_session.ReasoningLevel}");
+                ConsoleDisplay.PrintInfo("Usage: /reasoning <none|low|medium|high|xhigh>");
+                return true;
+            }
+
+            var level = args[0].ToLowerInvariant();
+            if (!validLevels.Contains(level))
+            {
+                ConsoleDisplay.PrintError($"Invalid reasoning level: {level}. Valid levels: none, low, medium, high, xhigh");
+                return true;
+            }
+
+            var supportsThinking = _session.ModelCapabilities.Capabilities?.Any(c => c.Contains("thinking")) == true;
+            if (!supportsThinking && level != "none")
+            {
+                ConsoleDisplay.PrintError($"Current model ({_session.Model.Name}) does not support reasoning.");
+                return true;
+            }
+
+            _session.SetReasoningLevel(level);
+            ConsoleDisplay.PrintInfo($"Reasoning level set to: {level}");
             return true;
         });
 
@@ -115,7 +149,7 @@ public class Repl(AppSettings _settings, OllamaApiClient _ollama)
 
             if (args.Length == 0)
             {
-                ConsoleDisplay.PrintInfo($"Current model: {_session.ModelName}");
+                ConsoleDisplay.PrintInfo($"Current model: {_session.Model.ModelName}");
                 ConsoleDisplay.PrintInfo("Available models:");
                 foreach (var model in _models)
                 {
@@ -141,7 +175,7 @@ public class Repl(AppSettings _settings, OllamaApiClient _ollama)
                 return true;
             }
 
-            _session.SetModel(targetModel.ModelName!, targetModelInfo);
+            _session.SetModel(targetModel, targetModelInfo);
             ConsoleDisplay.PrintInfo($"Switched to model: {targetModel.ModelName}");
             return true;
         });
@@ -181,6 +215,7 @@ public class Repl(AppSettings _settings, OllamaApiClient _ollama)
     {
         while (true)
         {
+            ConsoleDisplay.PrintColored(_session!.TokensIn + "\u2191 " + _session.TokensOut + "\u2193 " + _session.Model.Name + " reasoning: (" + _session.ReasoningLevel + ") \nType /help to see available commands", ConsoleColor.Gray);
             ConsoleDisplay.PrintUserPrompt();
             var input = Console.ReadLine();
 

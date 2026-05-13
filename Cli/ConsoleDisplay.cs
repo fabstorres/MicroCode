@@ -10,17 +10,22 @@ public static class ConsoleDisplay
 {
     private static readonly string[] Logo =
     [
-        "@@@@@@@%**%#%@@@@@@@",
-        "@@@@#     +  +:#@@@@",
-        "@@%       +  +   %@@",
-        "@#        +  +    #@",
-        "@:        +  +   :%@",
-        "%         +  ++@=  %",
-        "@:        +-##    :@",
-        "@*      -*#  +    *@",
-        "@@#  +*   +  +   #@@",
-        "@@@@%     +  +.#@@@@",
-        "@@@@@@@%**%*%@@@@@@@",
+        "██████████████████████████████",
+        "██████████     ██  ███████████",
+        "███████        ██  ██  ███████",
+        "█████          ██  ██    █████",
+        "████           ██  ██     ████",
+        "███            ██  ██      ███",
+        "██             ██  ██      ███",
+        "██             ██  ██  ████ ██",
+        "██             ██  ████     ██",
+        "██             ██████       ██",
+        "███           ███  ██      ███",
+        "████      ████ ██  ██     ████",
+        "█████  ███     ██  ██    █████",
+        "███████        ██  ██  ███████",
+        "██████████     ██  ███████████",
+        "██████████████████████████████",
     ];
 
     private const string Title = "MicroCode by Fabs";
@@ -87,7 +92,7 @@ public static class ConsoleDisplay
     public static void PrintUserPrompt()
     {
         Console.ForegroundColor = ConsoleColor.DarkYellow;
-        Console.Write("You: ");
+        Console.Write("> ");
         Console.ResetColor();
     }
 
