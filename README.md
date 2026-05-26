@@ -27,7 +27,9 @@ Type your prompt at the `You:` prompt. Use slash commands (see below) to control
 | `/clear`        | Clear the console                                |
 | `/exit`         | Exit the REPL                                    |
 | `/quit`         | Exit the REPL                                    |
+| `/quit`         | Exit the REPL                                    |
 | `/skills`       | Show all skills loaded during runtime            |
+| `/reasoning`    | Set reasoning level (`/reasoning <none|low|medium|high|xhigh>`) |
 
 ## Example Outputs
 
