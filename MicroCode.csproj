@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="OllamaSharp" Version="5.4.25" />
+    <PackageReference Include="Terminal.Gui" Version="2.4.1" />
   </ItemGroup>
 
   <ItemGroup>
