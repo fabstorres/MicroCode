@@ -4,6 +4,7 @@ using Terminal.Gui.Drawing;
 using Terminal.Gui.Editor;
 using Terminal.Gui.Editor.Document;
 using Terminal.Gui.Editor.Highlighting;
+using Terminal.Gui.Input;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 using System.Drawing;
@@ -25,8 +26,11 @@ class Microcode : Window
 
     private readonly View _messageViewport;
     private readonly View _messageStack;
+    private readonly View _inputContainer;
+    private readonly Label _inputPrompt;
     private readonly TextField _inputField;
     private readonly Scheme _userMessageScheme = CreateUserMessageScheme();
+    private readonly Scheme _inputScheme = CreateInputScheme();
     private readonly IApplication _app;
     private int _nextMessageY;
     private OllamaApiClient _ollama;
@@ -53,7 +57,7 @@ class Microcode : Window
             Width = Dim.Fill(),
             Height = Dim.Fill() - 3, // leave room for input row + borders
             CanFocus = false,
-            ViewportSettings = ViewportSettingsFlags.HasVerticalScrollBar
+            ViewportSettings = ViewportSettingsFlags.None
         };
 
         _messageStack = new View()
@@ -67,7 +71,7 @@ class Microcode : Window
 
         _messageViewport.Add(_messageStack);
 
-        _inputField = new TextField()
+        _inputContainer = new View()
         {
             X = 0,
             Y = Pos.Bottom(_messageViewport),
@@ -80,6 +84,29 @@ class Microcode : Window
                 LineStyle = LineStyle.Single
             }
         };
+        _inputContainer.SetScheme(_inputScheme);
+
+        _inputPrompt = new Label()
+        {
+            X = 0,
+            Y = 0,
+            Width = 1,
+            Height = 1,
+            Text = ">",
+            CanFocus = false
+        };
+        _inputPrompt.SetScheme(_inputScheme);
+
+        _inputField = new TextField()
+        {
+            X = 2,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = 1,
+            CanFocus = true
+        };
+        _inputField.SetScheme(_inputScheme);
+        _inputContainer.Add(_inputPrompt, _inputField);
 
         _inputField.Accepting += (s, e) =>
         {
@@ -92,8 +119,10 @@ class Microcode : Window
         };
 
         _messageViewport.ViewportChanged += (s, e) => ReflowMessages();
+        _messageViewport.MouseEvent += OnMessageViewportMouseEvent;
 
-        Add(_messageViewport, _inputField);
+        Add(_messageViewport, _inputContainer);
+        _inputField.SetFocus();
     }
 
     private async Task SendMessageAsync(string text)
@@ -212,10 +241,44 @@ class Microcode : Window
 
         if (delta != 0)
         {
-            _messageViewport.ScrollVertical(delta);
+            ScrollMessageViewport(delta);
         }
 
         _messageViewport.SetNeedsDraw();
+    }
+
+    private void OnMessageViewportMouseEvent(object? sender, Mouse mouse)
+    {
+        if (!mouse.IsWheel)
+        {
+            return;
+        }
+
+        var flags = mouse.Flags;
+
+        if (flags.HasFlag(MouseFlags.WheeledUp))
+        {
+            ScrollMessageViewport(-3);
+            mouse.Handled = true;
+            return;
+        }
+
+        if (flags.HasFlag(MouseFlags.WheeledDown))
+        {
+            ScrollMessageViewport(3);
+            mouse.Handled = true;
+            return;
+        }
+
+        mouse.Handled = true;
+    }
+
+    private void ScrollMessageViewport(int rows)
+    {
+        if (_messageViewport.ScrollVertical(rows) == true)
+        {
+            _messageViewport.SetNeedsDraw();
+        }
     }
 
     private int GetMessageWidth(int viewportWidth)
@@ -248,6 +311,20 @@ class Microcode : Window
     private static Scheme CreateUserMessageScheme()
     {
         var attribute = new Attribute(Color.White, Color.DarkGray);
+
+        return new Scheme()
+        {
+            Normal = attribute,
+            Focus = attribute,
+            Active = attribute,
+            Editable = attribute,
+            ReadOnly = attribute
+        };
+    }
+
+    private static Scheme CreateInputScheme()
+    {
+        var attribute = new Attribute(Color.White, Color.None);
 
         return new Scheme()
         {
