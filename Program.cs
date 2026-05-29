@@ -18,4 +18,4 @@ using IApplication app = Application.Create();
 
 app.Init();
 
-app.Run<Microcode>();
+app.Run(new Microcode(app));
