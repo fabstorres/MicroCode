@@ -9,6 +9,11 @@ using OllamaSharp.Tools;
 namespace MicroCode.Cli;
 
 /// <summary>
+/// Token usage reported by the model for the latest response.
+/// </summary>
+public sealed record TokenUsage(int TokensIn, int TokensOut);
+
+/// <summary>
 /// Wraps OllamaSharp Chat setup and model lifecycle.
 /// </summary>
 public class ChatSession
@@ -138,6 +143,36 @@ public class MicroCodeSession
     private string _reasoningLevel = "none";
 
     /// <summary>
+    /// Raised when assistant response content is streamed.
+    /// </summary>
+    public event EventHandler<string>? ContentReceived;
+
+    /// <summary>
+    /// Raised when model thinking/reasoning text is streamed.
+    /// </summary>
+    public event EventHandler<string>? ThinkingReceived;
+
+    /// <summary>
+    /// Raised before a tool call is invoked.
+    /// </summary>
+    public event EventHandler<Message.ToolCall>? ToolCallReceived;
+
+    /// <summary>
+    /// Raised after a tool call completes.
+    /// </summary>
+    public event EventHandler<ToolResult>? ToolResultReceived;
+
+    /// <summary>
+    /// Raised when token usage is updated.
+    /// </summary>
+    public event EventHandler<TokenUsage>? TokenUsageUpdated;
+
+    /// <summary>
+    /// Raised for informational session messages.
+    /// </summary>
+    public event EventHandler<string>? InfoReceived;
+
+    /// <summary>
     /// Gets the total number of prompt tokens consumed.
     /// </summary>
     public int TokensIn => _tokensIn;
@@ -209,21 +244,17 @@ public class MicroCodeSession
             {
                 if (chunk?.Message.Thinking is not null)
                 {
-                    Console.BackgroundColor = ConsoleColor.Black;
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    Console.Write(chunk.Message.Thinking);
-                    Console.ResetColor();
+                    ThinkingReceived?.Invoke(this, chunk.Message.Thinking);
                 }
                 if (chunk?.Message.Content is not null)
                 {
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.Write(chunk.Message.Content);
-                    Console.ResetColor();
+                    ContentReceived?.Invoke(this, chunk.Message.Content);
                 }
                 if (chunk is ChatDoneResponseStream done)
                 {
                     _tokensIn = done.PromptEvalCount;
                     _tokensOut = done.EvalCount;
+                    TokenUsageUpdated?.Invoke(this, new TokenUsage(_tokensIn, _tokensOut));
                 }
 
                 messageBuilder.Append(chunk);
@@ -238,9 +269,9 @@ public class MicroCodeSession
                 {
                     foreach (var toolCall in assistantMessage.ToolCalls)
                     {
-                        ConsoleDisplay.PrintToolCall(toolCall);
+                        ToolCallReceived?.Invoke(this, toolCall);
                         var toolResult = await invoker.InvokeAsync(toolCall, tools, default);
-                        ConsoleDisplay.PrintToolResult(toolResult);
+                        ToolResultReceived?.Invoke(this, toolResult);
 
                         var resultContent = $"Tool: {StringifyToolCall(toolCall)}:\nResult: {toolResult.Result}";
                         _conversation = [.. _conversation.Append(new Message(ChatRole.Tool, resultContent))];
@@ -252,8 +283,6 @@ public class MicroCodeSession
             break;
         }
 
-        Console.WriteLine();
-        Console.ResetColor();
     }
 
     private string AugmentWithSkillHints(string input)
@@ -310,7 +339,7 @@ public class MicroCodeSession
         if (!supportsThinking && _reasoningLevel != "none")
         {
             _reasoningLevel = "none";
-            ConsoleDisplay.PrintInfo("Model does not support reasoning. Reasoning level reset to none.");
+            InfoReceived?.Invoke(this, "Model does not support reasoning. Reasoning level reset to none.");
         }
     }
 }

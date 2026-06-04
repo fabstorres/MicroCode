@@ -50,10 +50,31 @@ public class Repl(AppSettings _settings, OllamaApiClient _ollama)
         }
         var modelInfo = await _ollama.ShowModelAsync(selectedModel.ModelName!) ?? throw new NotImplementedException();
         _session = new MicroCodeSession(_ollama, selectedModel, modelInfo, systemPrompt, _skills);
+        WireSessionEvents(_session);
 
         RegisterCommands();
 
         await RunLoopAsync();
+    }
+
+    private static void WireSessionEvents(MicroCodeSession session)
+    {
+        session.ThinkingReceived += (_, thinking) =>
+        {
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.Write(thinking);
+            Console.ResetColor();
+        };
+        session.ContentReceived += (_, content) =>
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write(content);
+            Console.ResetColor();
+        };
+        session.ToolCallReceived += (_, toolCall) => ConsoleDisplay.PrintToolCall(toolCall);
+        session.ToolResultReceived += (_, toolResult) => ConsoleDisplay.PrintToolResult(toolResult);
+        session.InfoReceived += (_, message) => ConsoleDisplay.PrintInfo(message);
     }
 
     private async Task<OllamaSharp.Models.Model?> SelectModelAsync()
@@ -243,6 +264,8 @@ public class Repl(AppSettings _settings, OllamaApiClient _ollama)
             if (_session is not null)
             {
                 await _session.SendAsync(input);
+                Console.WriteLine();
+                Console.ResetColor();
             }
         }
     }
